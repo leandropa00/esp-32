@@ -7,8 +7,8 @@
  *            VCC (rojo)              -> 5V (o 3.3V si el servo es pequeño)
  *            GND (marrón)            -> GND de la placa
  *
- * El navegador muestra dos botones (izquierda / derecha) que giran el
- * servo 5° por clic, y el ángulo actual se actualiza en tiempo real.
+ * El navegador muestra un slider (0° a 180°) para girar el servo
+ * en cualquier ángulo, y el valor se aplica en tiempo real.
  *
  * Configura antes de subir:
  *   - SSID / PASSWORD de tu red WiFi
@@ -26,7 +26,6 @@ const int PIN_SERVO = 13;   // Señal del servo
 
 const int ANG_MIN   = 0;    // Ángulo mínimo (0°)
 const int ANG_MAX   = 180;  // Ángulo máximo (180°)
-const int STEP      = 5;    // Pasos por clic (grados)
 // =======================================================
 
 WebServer server(80);
@@ -56,13 +55,13 @@ const char index_html[] PROGMEM = R"rawliteral(<!DOCTYPE html>
        overflow:hidden;border:1px solid var(--border)}
   .bar > div{height:100%;width:50%;background:linear-gradient(90deg,var(--acc),#2ea043);
        transition:width .2s}
-  .btns{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
-  .btn{width:130px;height:130px;border-radius:20px;border:2px solid var(--border);
-       background:var(--card);color:var(--txt);font-size:40px;font-weight:700;
-       cursor:pointer;transition:transform .08s, background .15s}
-  .btn:active{transform:scale(.92)}
-  .btn:hover{background:#1f2630}
-  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .slider{width:min(400px,80vw);-webkit-appearance:none;appearance:none;height:12px;
+       background:var(--card);border-radius:8px;outline:none;border:1px solid var(--border)}
+  .slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:34px;height:34px;
+       border-radius:50%;background:var(--acc);border:3px solid var(--bg);cursor:pointer;
+       box-shadow:0 0 10px rgba(88,166,255,.5)}
+  .slider::-moz-range-thumb{width:34px;height:34px;border-radius:50%;background:var(--acc);
+       border:3px solid var(--bg);cursor:pointer}
   .lbl{color:#8b949e;font-size:13px;text-align:center;margin-top:6px}
 </style>
 </head>
@@ -71,40 +70,26 @@ const char index_html[] PROGMEM = R"rawliteral(<!DOCTYPE html>
   <div class="angle"><span id="ang">90</span><small>&deg;</small></div>
   <div class="bar"><div id="fill"></div></div>
 
-  <div class="btns">
-    <div>
-      <button class="btn" id="izq" onclick="mover('izq')">&lt;&lt; Izq</button>
-      <div class="lbl">Gira a la izquierda (-5&deg;)</div>
-    </div>
-    <div>
-      <button class="btn" id="der" onclick="mover('der')">Der &gt;&gt;</button>
-      <div class="lbl">Gira a la derecha (+5&deg;)</div>
-    </div>
-  </div>
+  <input type="range" class="slider" id="slider" min="0" max="180" value="90"
+         oninput="mover(this.value)">
+  <div class="lbl">Arrastra para girar el servo (0&deg; a 180&deg;)</div>
 
 <script>
 const angEl  = document.getElementById('ang');
 const fillEl = document.getElementById('fill');
-let busy = false;
+const slider = document.getElementById('slider');
 
 function mostrar(a){
   angEl.textContent = a;
   fillEl.style.width = (a/180*100) + '%';
 }
 
-async function mover(dir){
-  if (busy) return;
-  busy = true;
-  document.getElementById('izq').disabled = true;
-  document.getElementById('der').disabled = true;
+async function mover(val){
   try {
-    const res = await fetch('/estado?dir=' + dir);
+    const res = await fetch('/estado?dir=' + val);
     const data = await res.json();
     mostrar(data.ang);
   } catch(e){}
-  busy = false;
-  document.getElementById('izq').disabled = false;
-  document.getElementById('der').disabled = false;
 }
 
 (async function init(){
@@ -112,6 +97,7 @@ async function mover(dir){
     const res = await fetch('/estado');
     const data = await res.json();
     mostrar(data.ang);
+    slider.value = data.ang;
   } catch(e){}
 })();
 </script>
@@ -125,18 +111,11 @@ String jsonEstado() {
 }
 
 void handleRoot() {
-  // Si viene ?dir=izq|der, movemos el servo y devolvemos JSON
+  // Si viene ?dir=<valor 0..180>, movemos el servo y devolvemos JSON
   if (server.hasArg("dir")) {
-    String dir = server.arg("dir");
-    if (dir == "izq") {
-      angulo -= STEP;
-      if (angulo < ANG_MIN) angulo = ANG_MIN;
-      servo.write(angulo);
-    } else if (dir == "der") {
-      angulo += STEP;
-      if (angulo > ANG_MAX) angulo = ANG_MAX;
-      servo.write(angulo);
-    }
+    int valor = server.arg("dir").toInt();
+    angulo = constrain(valor, ANG_MIN, ANG_MAX);
+    servo.write(angulo);
     server.send(200, "application/json", jsonEstado());
     Serial.print("Ángulo -> ");
     Serial.println(angulo);
