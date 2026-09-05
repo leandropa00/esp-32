@@ -4,12 +4,12 @@ Repositorio con dos proyectos independientes de Arduino (`*.ino`) para la placa 
 
 ## Tabla de Contenidos
 
-├── 1. Objetivos y Alcance
-├── 2. Arquitectura y Componentes
-├── 3. Diagrama de Bloques / Flujo
-├── 4. Desarrollo e Implementación (Código/Configuración)
-├── 5. Pruebas y Evidencias de Funcionamiento
-└── 6. Registro de Incidencias, Análisis y Conclusiones
+1. [Objetivos y Alcance](#1-objetivos-y-alcance)
+2. [Arquitectura y Componentes](#2-arquitectura-y-componentes)
+3. [Diagrama de Bloques / Flujo](#3-diagrama-de-bloques--flujo)
+4. [Desarrollo e Implementación (Código/Configuración)](#4-desarrollo-e-implementación-códigoconfiguración)
+5. [Pruebas y Evidencias de Funcionamiento](#5-pruebas-y-evidencias-de-funcionamiento)
+6. [Registro de Incidencias, Análisis y Conclusiones](#6-registro-de-incidencias-análisis-y-conclusiones)
 
 ---
 
